@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Login App</string>
+    <string name="welcome_message">Bem-vindo ao App</string>
+    <string name="email_hint">Email</string>
+    <string name="password_hint">Senha</string>
+    <string name="name_hint">Nome</string>
+    <string name="login_button">Login</string>
+    <string name="register_button">Cadastro</string>
+    <string name="switch_to_register">Não tem conta? Cadastre-se</string>
+    <string name="switch_to_login">Já tem conta? Faça login</string>
+</resources>
