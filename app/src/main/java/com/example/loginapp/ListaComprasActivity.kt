@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -24,6 +25,24 @@ class ListaComprasActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lista_compras)
+
+        // ✅ INICIALIZAR O BANCO H2 AQUI
+        ListaManager.init(this)
+
+        // ✅✅✅ ADICIONE O CÓDIGO DE TESTE AQUI ✅✅✅
+        val listasExistentes = ListaManager.carregarListasPessoais(this)
+        if (listasExistentes.isEmpty()) {
+            val listaTeste = ListaCompras(
+                "Minha Primeira Lista",
+                listOf(
+                    ItemLista("Arroz", "2kg", false),
+                    ItemLista("Feijão", "1kg", true)
+                ),
+                false
+            )
+            ListaManager.salvarLista(this, listaTeste)
+            Toast.makeText(this, "Lista exemplo criada no H2!", Toast.LENGTH_LONG).show()
+        }
 
         // Obter o nome do usuário da tela de login
         val nomeUsuario = intent.getStringExtra("NOME_USUARIO") ?: "Leonardo"
@@ -56,31 +75,16 @@ class ListaComprasActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerViewListas)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Carregar listas salvas
+        // ✅ AGORA USA APENAS OS DADOS DO BANCO H2 (sem fallback)
         val listasPessoais = ListaManager.carregarListasPessoais(this)
         val listasCompartilhadas = ListaManager.carregarListasCompartilhadas(this)
 
-        // Se não tiver listas salvas, usar exemplos
-        val minhasListas = if (listasPessoais.isNotEmpty()) {
-            listasPessoais
-        } else {
-            listOf(
-                ListaCompras("Mercado", emptyList(), false, true),
-                ListaCompras("Farmácia", emptyList(), false, true),
-                ListaCompras("Churrasco", emptyList(), false, true)
-            )
+        // Mostrar mensagem se não houver listas
+        if (listasPessoais.isEmpty() && listasCompartilhadas.isEmpty()) {
+            Toast.makeText(this, "Nenhuma lista encontrada. Crie uma nova lista!", Toast.LENGTH_SHORT).show()
         }
 
-        val listasCompart = if (listasCompartilhadas.isNotEmpty()) {
-            listasCompartilhadas
-        } else {
-            listOf(
-                ListaCompras("Mercado", emptyList(), true, true),
-                ListaCompras("Farmácia", emptyList(), true, true)
-            )
-        }
-
-        adapter = ListaAdapter(minhasListas, listasCompart)
+        adapter = ListaAdapter(listasPessoais, listasCompartilhadas)
         recyclerView.adapter = adapter
     }
 
@@ -88,10 +92,11 @@ class ListaComprasActivity : AppCompatActivity() {
         super.onResume()
         // Recarregar as listas quando voltar para esta tela
         setupRecyclerView()
+        Toast.makeText(this, "Listas atualizadas!", Toast.LENGTH_SHORT).show()
     }
 }
 
-// Adapter para o RecyclerView
+// ✅ ADAPTER ATUALIZADO COM BOTÃO DE DELETAR
 class ListaAdapter(
     private val minhasListas: List<ListaCompras>,
     private val listasCompartilhadas: List<ListaCompras>
@@ -163,10 +168,36 @@ class ListaAdapter(
     class ListaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val nomeLista: TextView = itemView.findViewById(R.id.nomeLista)
         private val iconeConcluido: TextView = itemView.findViewById(R.id.iconeConcluido)
+        // ✅ ADICIONE O BOTÃO DE DELETAR
+        private val btnDeletar: ImageButton = itemView.findViewById(R.id.btnDeletar)
 
         fun bind(lista: ListaCompras) {
             nomeLista.text = lista.nome
             iconeConcluido.visibility = if (lista.concluida) View.VISIBLE else View.GONE
+
+            // ✅ CONFIGURAR O BOTÃO DE DELETAR
+            btnDeletar.visibility = if (!lista.compartilhada) View.VISIBLE else View.GONE
+            btnDeletar.setOnClickListener {
+                val context = itemView.context
+                AlertDialog.Builder(context)
+                    .setTitle("Deletar Lista")
+                    .setMessage("Tem certeza que deseja deletar '${lista.nome}'?")
+                    .setPositiveButton("Deletar") { dialog, which ->
+                        // Deletar do banco de dados
+                        val sucesso = ListaManager.deletarLista(context, lista.nome)
+                        if (sucesso) {
+                            Toast.makeText(context, "Lista '${lista.nome}' deletada!", Toast.LENGTH_SHORT).show()
+                            // Recarregar a activity
+                            if (context is AppCompatActivity) {
+                                context.recreate()
+                            }
+                        } else {
+                            Toast.makeText(context, "Erro ao deletar lista!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
 
             // Clique para abrir detalhes da lista
             itemView.setOnClickListener {

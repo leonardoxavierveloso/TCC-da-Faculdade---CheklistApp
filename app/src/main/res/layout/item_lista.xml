@@ -22,4 +22,15 @@
         android:gravity="center"
         android:visibility="gone" />
 
+    <!-- ✅ BOTÃO DE DELETAR ADICIONADO -->
+    <ImageButton
+        android:id="@+id/btnDeletar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:src="@android:drawable/ic_delete"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Deletar lista"
+        android:visibility="gone" />
+
 </LinearLayout>
